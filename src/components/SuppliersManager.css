@@ -1,0 +1,165 @@
+/* SuppliersManager.css */
+
+/* متغيرات الألوان الموحدة */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --warning-color: #fd7e14;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.suppliers-manager-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* رأس القسم */
+.suppliers-header {
+  margin-bottom: 2rem;
+}
+
+.suppliers-title {
+  color: var(--dark-color);
+  font-weight: 700;
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.suppliers-title i {
+  background: linear-gradient(45deg, var(--primary-color), #4dabf7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* أزرار التبديل بين العرض */
+.btn-group .btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* شريط البحث */
+.search-bar .card {
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.search-bar .input-group-text {
+  border-radius: 8px 0 0 8px;
+}
+
+.search-bar input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  border-color: var(--primary-color);
+}
+
+/* نموذج إضافة المورد */
+.add-supplier-form .card {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4dabf7 100%);
+}
+
+.form-label {
+  color: var(--dark-color);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.form-actions {
+  border-top: 1px solid #dee2e6;
+  padding-top: 1rem;
+}
+
+/* بطاقات الموردين */
+.supplier-card .card {
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.supplier-card .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* صورة المورد الرمزية */
+.supplier-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.supplier-avatar-sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* اسم المورد */
+.supplier-name {
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 0;
+}
+
+/* تفاصيل المورد */
+.supplier-details .detail-item {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.supplier-details .detail-item:last-child {
+  border-bottom: none;
+}
+
+.supplier-details .detail-item i {
+  width: 16px;
+  text-align: center;
+}
+
+/* أزرار العمليات في البطاقات */
+.supplier-actions .btn-group button {
+  transition: var(--transition);
+  border-radius: 6px;
+  margin: 0 2px;
+}
+
