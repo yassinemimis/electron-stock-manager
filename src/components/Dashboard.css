@@ -34,7 +34,7 @@
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
-  background: linear-gradient(45deg, var(--primary-color), #4dabf7);
+  background: linear-gradient(45deg, var(--dark-color), #212529);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

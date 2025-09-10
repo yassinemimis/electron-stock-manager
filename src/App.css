@@ -23,6 +23,10 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+/* App.css أو أي ملف CSS */
+.bg-purple {
+  background-color: #6f42c1 !important; /* بنفسجي */
+}
 
 .App-link {
   color: #61dafb;
