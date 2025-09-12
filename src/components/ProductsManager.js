@@ -18,6 +18,7 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   // تصفية المنتجات حسب البحث والفئة
   const filteredProducts = products.filter(product => {
@@ -79,6 +80,30 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
       setTimeout(() => document.body.removeChild(successToast), 3000);
     } catch (error) {
       alert('خطأ في حذف المنتج: ' + error.message);
+    }
+    setLoading(false);
+  };
+  const handleUpdate = async () => {
+    if (!editingProduct.name.trim()) {
+      alert("يرجى إدخال اسم المنتج");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await InventoryService.updateProduct(editingProduct.id, editingProduct);
+      setEditingProduct(null);
+      onRefresh();
+
+      // إشعار نجاح
+      const successToast = document.createElement("div");
+      successToast.className = "alert alert-info position-fixed";
+      successToast.style.cssText = "top: 20px; right: 20px; z-index: 9999;";
+      successToast.innerHTML = "✏️ تم تحديث المنتج بنجاح";
+      document.body.appendChild(successToast);
+      setTimeout(() => document.body.removeChild(successToast), 3000);
+    } catch (error) {
+      alert("خطأ في تحديث المنتج: " + error.message);
     }
     setLoading(false);
   };
@@ -163,15 +188,14 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
           </div>
         </div>
       </div>
-
-      {/* نموذج إضافة المنتج */}
+      {/* نموذج إضافة / تعديل المنتج */}
       {showAddForm && (
         <div className="add-product-form mb-4">
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-gradient-primary text-white">
               <h5 className="mb-0">
-                <i className="fas fa-plus-circle me-2"></i>
-                إضافة منتج جديد
+                <i className={`fas ${editingProduct ? 'fa-edit' : 'fa-plus-circle'} me-2`}></i>
+                {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
               </h5>
             </div>
             <div className="card-body p-4">
@@ -182,26 +206,40 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                     type="text"
                     className="form-control form-control-lg"
                     placeholder="أدخل اسم المنتج"
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    value={editingProduct ? editingProduct.name : newProduct.name}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, name: e.target.value })
+                        : setNewProduct({ ...newProduct, name: e.target.value })
+                    }
                   />
                 </div>
+
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">رمز المنتج (SKU)</label>
                   <input
                     type="text"
                     className="form-control form-control-lg"
                     placeholder="مثل: PRD001"
-                    value={newProduct.sku}
-                    onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                    value={editingProduct ? editingProduct.sku : newProduct.sku}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, sku: e.target.value })
+                        : setNewProduct({ ...newProduct, sku: e.target.value })
+                    }
                   />
                 </div>
+
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">الفئة</label>
                   <select
                     className="form-select form-select-lg"
-                    value={newProduct.category_id}
-                    onChange={(e) => setNewProduct({ ...newProduct, category_id: parseInt(e.target.value) })}
+                    value={editingProduct ? editingProduct.category_id : newProduct.category_id}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, category_id: parseInt(e.target.value) })
+                        : setNewProduct({ ...newProduct, category_id: parseInt(e.target.value) })
+                    }
                   >
                     <option value="">اختر فئة</option>
                     {categories.map(c => (
@@ -209,12 +247,17 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                     ))}
                   </select>
                 </div>
+
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">المورد</label>
                   <select
                     className="form-select form-select-lg"
-                    value={newProduct.supplier_id}
-                    onChange={(e) => setNewProduct({ ...newProduct, supplier_id: parseInt(e.target.value) })}
+                    value={editingProduct ? editingProduct.supplier_id : newProduct.supplier_id}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, supplier_id: parseInt(e.target.value) })
+                        : setNewProduct({ ...newProduct, supplier_id: parseInt(e.target.value) })
+                    }
                   >
                     <option value="">اختر مورد</option>
                     {suppliers.map(s => (
@@ -222,34 +265,49 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                     ))}
                   </select>
                 </div>
+
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">السعر (د.ج)</label>
                   <input
                     type="number"
                     className="form-control form-control-lg"
                     placeholder="0.00"
-                    value={newProduct.unit_price}
-                    onChange={(e) => setNewProduct({ ...newProduct, unit_price: parseFloat(e.target.value) || 0 })}
+                    value={editingProduct ? editingProduct.unit_price : newProduct.unit_price}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, unit_price: parseFloat(e.target.value) || 0 })
+                        : setNewProduct({ ...newProduct, unit_price: parseFloat(e.target.value) || 0 })
+                    }
                   />
                 </div>
+
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">الكمية المتوفرة</label>
                   <input
                     type="number"
                     className="form-control form-control-lg"
                     placeholder="0"
-                    value={newProduct.stock_quantity}
-                    onChange={(e) => setNewProduct({ ...newProduct, stock_quantity: parseInt(e.target.value) || 0 })}
+                    value={editingProduct ? editingProduct.stock_quantity : newProduct.stock_quantity}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, stock_quantity: parseInt(e.target.value) || 0 })
+                        : setNewProduct({ ...newProduct, stock_quantity: parseInt(e.target.value) || 0 })
+                    }
                   />
                 </div>
+
                 <div className="col-12">
                   <label className="form-label fw-semibold">وصف المنتج</label>
                   <textarea
                     className="form-control"
                     rows="2"
                     placeholder="وصف اختياري للمنتج"
-                    value={newProduct.description}
-                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                    value={editingProduct ? editingProduct.description : newProduct.description}
+                    onChange={(e) =>
+                      editingProduct
+                        ? setEditingProduct({ ...editingProduct, description: e.target.value })
+                        : setNewProduct({ ...newProduct, description: e.target.value })
+                    }
                   ></textarea>
                 </div>
               </div>
@@ -258,27 +316,31 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                 <button
                   type="button"
                   className="btn btn-secondary me-2"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingProduct(null);
+                  }}
                   disabled={loading}
                 >
                   <i className="fas fa-times me-1"></i>
                   إلغاء
                 </button>
+
                 <button
                   type="button"
-                  className="btn btn-success btn-lg px-4"
-                  onClick={handleAdd}
+                  className={`btn ${editingProduct ? 'btn-warning' : 'btn-success'} btn-lg px-4`}
+                  onClick={editingProduct ? handleUpdate : handleAdd}
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2"></span>
-                      جارٍ الإضافة...
+                      {editingProduct ? 'جارٍ التحديث...' : 'جارٍ الإضافة...'}
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-check me-2"></i>
-                      إضافة المنتج
+                      <i className={`fas ${editingProduct ? 'fa-save' : 'fa-check'} me-2`}></i>
+                      {editingProduct ? 'تحديث المنتج' : 'إضافة المنتج'}
                     </>
                   )}
                 </button>
@@ -287,6 +349,7 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
           </div>
         </div>
       )}
+
       {/* جدول المنتجات */}
       <div className="products-table">
         <div className="card border-0 shadow-sm">
@@ -307,8 +370,12 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                 <p className="text-muted">جرب تغيير مصطلحات البحث أو إضافة منتج جديد</p>
               </div>
             ) : (
-              <div className="table-responsive">
+              <div
+                className="table-responsive"
+                style={{ maxHeight: "500px", overflowY: "auto" }} // ✅ تحديد الارتفاع مع سكرول
+              >
                 <table className="table table-hover mb-0">
+
                   <thead className="table-dark">
                     <tr>
                       <th className="ps-4">
@@ -335,65 +402,76 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
                     </tr>
                   </thead>
                   <tbody>
-                  {filteredProducts.map((product) => {
-  const stockStatus = getStockStatus(product.stock_quantity);
-  
-  // الحصول على اسم الفئة والمورد من الـ ID
-  const categoryName = categories.find(c => c.id === product.category_id)?.name || 'غير محدد';
-  const supplierName = suppliers.find(s => s.id === product.supplier_id)?.name || 'غير محدد';
+                    {filteredProducts.map((product) => {
+                      const stockStatus = getStockStatus(product.stock_quantity);
 
-  return (
-    <tr key={product.id} className="table-row-hover">
-      <td className="ps-4">
-        <div className="d-flex align-items-center">
-          <div className="product-avatar me-3">
-            <div className="avatar-circle bg-primary text-white">
-              {product.name.charAt(0)}
-            </div>
-          </div>
-          <div>
-            <div className="fw-semibold text-dark">{product.name}</div>
-            {product.sku && <small className="text-muted">SKU: {product.sku}</small>}
-          </div>
-        </div>
-      </td>
-      <td>
-        <span className="badge bg-light text-dark border">{categoryName}</span>
-      </td>
-      <td>
-        <span className="text-muted">{supplierName}</span>
-      </td>
-      <td>
-        <span className="fw-semibold text-success">
-          {product.unit_price ? `${product.unit_price} د.ج` : '-'}
-        </span>
-      </td>
-      <td>
-        <span className="fw-bold fs-6">{product.stock_quantity}</span>
-      </td>
-      <td>
-        <span className={`badge bg-${stockStatus.class} bg-opacity-10 text-${stockStatus.class} border border-${stockStatus.class}`}>
-          {stockStatus.text}
-        </span>
-      </td>
-      <td className="text-center">
-        <div className="btn-group" role="group">
-          <button className="btn btn-sm btn-outline-primary" title="تعديل">
-            <i className="fas fa-edit"></i>
-          </button>
-          <button
-            className="btn btn-sm btn-outline-danger"
-            onClick={() => handleDelete(product.id, product.name)}
-            disabled={loading}
-            title="حذف"
-          >
-            <i className="fas fa-trash"></i>
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-})}
+                      // الحصول على اسم الفئة والمورد من الـ ID
+                      const categoryName = categories.find(c => c.id === product.category_id)?.name || 'غير محدد';
+                      const supplierName = suppliers.find(s => s.id === product.supplier_id)?.name || 'غير محدد';
+
+                      return (
+                        <tr key={product.id} className="table-row-hover">
+                          <td className="ps-4">
+                            <div className="d-flex align-items-center">
+                              <div className="product-avatar me-3">
+                                <div className="avatar-circle bg-primary text-white">
+                                  {product.name.charAt(0)}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="fw-semibold text-dark">{product.name}</div>
+                                {product.sku && <small className="text-muted">SKU: {product.sku}</small>}
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-dark border">{categoryName}</span>
+                          </td>
+                          <td>
+                            <span className="text-muted">{supplierName}</span>
+                          </td>
+                          <td>
+                            <span className="fw-semibold text-success">
+                              {product.unit_price ? `${product.unit_price} د.ج` : '-'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="fw-bold fs-6">{product.stock_quantity}</span>
+                          </td>
+                          <td>
+                            <span className={`badge bg-${stockStatus.class} bg-opacity-10 text-${stockStatus.class} border border-${stockStatus.class}`}>
+                              {stockStatus.text}
+                            </span>
+                          </td>
+                          <td className="text-center">
+                            <div className="btn-group" role="group">
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                title="تعديل"
+                                onClick={() => {
+                                  setEditingProduct(product);
+                                  setShowAddForm(true);   // ✅ فتح النموذج تلقائياً
+                                }}
+
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleDelete(product.id, product.name)}
+                                disabled={loading}
+                                title="حذف"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+
+
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
                   </tbody>
                 </table>
@@ -403,53 +481,53 @@ const ProductsManager = ({ products, categories, suppliers, onRefresh }) => {
         </div>
       </div>
 
-{/* معلومات إضافية */}
-<div className="products-summary mt-4">
-  <div className="row">
-    <div className="col-md-3">
-      <div className="card text-center border-0 bg-primary bg-opacity-10">
-        <div className="card-body">
-          <i className="fas fa-boxes fa-2x text-primary mb-2"></i>
-          <h5 className="text-primary">{products.length}</h5>
-          <small className="text-muted">إجمالي المنتجات</small>
+      {/* معلومات إضافية */}
+      <div className="products-summary mt-4">
+        <div className="row">
+          <div className="col-md-3">
+            <div className="card text-center border-0 bg-primary bg-opacity-10">
+              <div className="card-body">
+                <i className="fas fa-boxes fa-2x text-primary mb-2"></i>
+                <h5 className="text-primary">{products.length}</h5>
+                <small className="text-muted">إجمالي المنتجات</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card text-center border-0 bg-success bg-opacity-10">
+              <div className="card-body">
+                <i className="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h5 className="text-success">
+                  {products.filter(p => p.stock_quantity > 10).length}
+                </h5>
+                <small className="text-muted">منتجات متوفرة</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card text-center border-0 bg-warning bg-opacity-10">
+              <div className="card-body">
+                <i className="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                <h5 className="text-warning">
+                  {products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 10).length}
+                </h5>
+                <small className="text-muted">مخزون منخفض</small>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card text-center border-0 bg-danger bg-opacity-10">
+              <div className="card-body">
+                <i className="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                <h5 className="text-danger">
+                  {products.filter(p => p.stock_quantity === 0).length}
+                </h5>
+                <small className="text-muted">نفد المخزون</small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div className="col-md-3">
-      <div className="card text-center border-0 bg-success bg-opacity-10">
-        <div className="card-body">
-          <i className="fas fa-check-circle fa-2x text-success mb-2"></i>
-          <h5 className="text-success">
-            {products.filter(p => p.stock_quantity > 10).length}
-          </h5>
-          <small className="text-muted">منتجات متوفرة</small>
-        </div>
-      </div>
-    </div>
-    <div className="col-md-3">
-      <div className="card text-center border-0 bg-warning bg-opacity-10">
-        <div className="card-body">
-          <i className="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-          <h5 className="text-warning">
-            {products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 10).length}
-          </h5>
-          <small className="text-muted">مخزون منخفض</small>
-        </div>
-      </div>
-    </div>
-    <div className="col-md-3">
-      <div className="card text-center border-0 bg-danger bg-opacity-10">
-        <div className="card-body">
-          <i className="fas fa-times-circle fa-2x text-danger mb-2"></i>
-          <h5 className="text-danger">
-            {products.filter(p => p.stock_quantity === 0).length}
-          </h5>
-          <small className="text-muted">نفد المخزون</small>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
     </div>
   );

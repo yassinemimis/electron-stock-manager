@@ -120,25 +120,10 @@ function initializeDatabase() {
       )
     `);
 
-    // إدراج بيانات أساسية
-    insertInitialData();
+
   });
 }
 
-// إدراج بيانات أولية
-function insertInitialData() {
-  // فئات أساسية
-  const categories = [
-    ['إلكترونيات', 'أجهزة إلكترونية ومعدات'],
-    ['ملابس', 'ملابس وأزياء'],
-    ['مواد غذائية', 'أطعمة ومشروبات'],
-    ['مكتبية', 'أدوات مكتبية وقرطاسية']
-  ];
-
-  categories.forEach(category => {
-    db.run('INSERT OR IGNORE INTO categories (name, description) VALUES (?, ?)', category);
-  });
-}
 
 // إنشاء النافذة الرئيسية
 function createWindow() {
@@ -214,6 +199,19 @@ ipcMain.handle('products-update', async (event, id, product) => {
     });
   });
 });
+ipcMain.handle('products-update-stock', async (event, { productId, quantity }) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?`,
+      [quantity, productId],
+      function (err) {
+        if (err) return reject(err);
+        resolve({ success: true, changes: this.changes });
+      }
+    );
+  });
+});
+
 
 ipcMain.handle('products-delete', async (event, id) => {
   return new Promise((resolve, reject) => {
@@ -244,6 +242,48 @@ ipcMain.handle('categories-add', async (event, category) => {
     });
   });
 });
+// === تحديث الفئة ===
+ipcMain.handle('categories-update', async (event, category) => {
+  try {
+    if (!category) throw new Error("الفئة غير معرفة");
+    const { id, name, description } = category;
+    if (!id) throw new Error("معرّف الفئة (id) مطلوب للتعديل");
+
+    await db.run(
+      `UPDATE categories SET name = ?, description = ? WHERE id = ?`,
+      [name, description, id]
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في تحديث الفئة:", error.message);
+    throw error;
+  }
+});
+
+// === حذف الفئة ===
+ipcMain.handle('categories-delete', async (event, id) => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!id) {
+        reject(new Error("معرّف الفئة (id) مطلوب للحذف"));
+        return;
+      }
+
+      db.run(`DELETE FROM categories WHERE id = ?`, [id], function (err) {
+        if (err) {
+          console.error("خطأ في حذف الفئة:", err.message);
+          reject(err);
+        } else {
+          resolve({ success: true, deletedRows: this.changes });
+        }
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+});
+
 
 // === عمليات الموردين ===
 ipcMain.handle('suppliers-get-all', async () => {
@@ -266,6 +306,49 @@ ipcMain.handle('suppliers-add', async (event, supplier) => {
     });
   });
 });
+// === تحديث مورد ===
+// === تحديث المورد ===
+ipcMain.handle('suppliers-update', async (event, supplier) => {
+  try {
+    if (!supplier.id) throw new Error("معرّف المورد (id) مطلوب للتعديل");
+
+    await db.run(
+      `UPDATE suppliers 
+       SET name = ?, contact_person = ?, phone = ?, email = ?, address = ?
+       WHERE id = ?`,
+      [
+        supplier.name,
+        supplier.contact_person || '',
+        supplier.phone || '',
+        supplier.email || '',
+        supplier.address || '',
+        supplier.id
+      ]
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في تحديث المورد:", error.message);
+    throw error;
+  }
+});
+
+// === حذف المورد ===
+ipcMain.handle('suppliers-delete', async (event, id) => {
+  try {
+    if (!id) throw new Error("معرّف المورد (id) مطلوب للحذف");
+
+    await db.run(
+      `DELETE FROM suppliers WHERE id = ?`,
+      [id]
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في حذف المورد:", error.message);
+    throw error;
+  }
+});
 
 // === عمليات العملاء ===
 ipcMain.handle('customers-get-all', async () => {
@@ -280,11 +363,38 @@ ipcMain.handle('customers-get-all', async () => {
 ipcMain.handle('customers-add', async (event, customer) => {
   return new Promise((resolve, reject) => {
     const { name, phone, email, address } = customer;
-    db.run('INSERT INTO customers (name, phone, email, address) VALUES (?, ?, ?, ?)', 
-    [name, phone, email, address], 
-    function(err) {
+    db.run(
+      'INSERT INTO customers (name, phone, email, address) VALUES (?, ?, ?, ?)', 
+      [name, phone, email, address], 
+      function(err) {
+        if (err) reject(err);
+        else resolve({ id: this.lastID, ...customer });
+      }
+    );
+  });
+});
+
+// تحديث عميل
+ipcMain.handle('customers-update', async (event, id, customer) => {
+  return new Promise((resolve, reject) => {
+    const { name, phone, email, address } = customer;
+    db.run(
+      'UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE id = ?', 
+      [name, phone, email, address, id], 
+      function(err) {
+        if (err) reject(err);
+        else resolve({ changes: this.changes, id, ...customer });
+      }
+    );
+  });
+});
+
+// حذف عميل
+ipcMain.handle('customers-delete', async (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM customers WHERE id = ?', [id], function(err) {
       if (err) reject(err);
-      else resolve({ id: this.lastID, ...customer });
+      else resolve({ changes: this.changes, id });
     });
   });
 });
@@ -338,6 +448,130 @@ ipcMain.handle('transactions-add-sale', async (event, transaction) => {
     });
   });
 });
+ipcMain.handle('transactions-get-all', async () => {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT t.id, t.reference_number, t.total_amount, t.transaction_date, c.name AS customer_name
+      FROM transactions t
+      LEFT JOIN customers c ON t.customer_id = c.id
+      WHERE t.type = 'sale'
+      ORDER BY t.transaction_date DESC
+    `, [], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+});
+ipcMain.handle('transactions-get-details-full', async (event, transactionId) => {
+  return new Promise((resolve, reject) => {
+    db.get(`
+      SELECT t.id, t.reference_number, t.total_amount, t.transaction_date, t.notes,
+             c.name AS customer_name
+      FROM transactions t
+      LEFT JOIN customers c ON t.customer_id = c.id
+      WHERE t.id = ?
+    `, [transactionId], (err, transaction) => {
+      if (err) return reject(err);
+      if (!transaction) return resolve(null);
+
+     db.all(`
+  SELECT ti.id, ti.product_id, p.name AS product_name, ti.quantity, ti.unit_price, ti.total_price
+  FROM transaction_items ti
+  JOIN products p ON ti.product_id = p.id
+  WHERE ti.transaction_id = ?
+`, [transactionId], (err2, items) => {
+  if (err2) return reject(err2);
+  // التأكد أن items دائمًا مصفوفة
+  resolve({ ...transaction, items: items || [] });
+});
+
+    });
+  });
+});
+
+
+ipcMain.handle('transactions-delete', async (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // أولاً استرجاع العناصر لتحديث المخزون
+      db.all(`SELECT product_id, quantity FROM transaction_items WHERE transaction_id = ?`, [id], (err, items) => {
+        if (err) return reject(err);
+
+        items.forEach(item => {
+          db.run(`
+            INSERT INTO stock_movements (product_id, movement_type, quantity, reference_id, notes)
+            VALUES (?, 'in', ?, ?, 'حذف عملية بيع واسترجاع المخزون')
+          `, [item.product_id, item.quantity, id]);
+        });
+
+        // حذف العناصر
+        db.run(`DELETE FROM transaction_items WHERE transaction_id = ?`, [id], (err2) => {
+          if (err2) return reject(err2);
+
+          // حذف العملية
+          db.run(`DELETE FROM transactions WHERE id = ?`, [id], (err3) => {
+            if (err3) return reject(err3);
+            resolve({ success: true });
+          });
+        });
+      });
+    });
+  });
+});
+ipcMain.handle('transactions-return-item', async (event, { transactionId, productId, quantity }) => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // جلب المنتج من تفاصيل الفاتورة
+      db.get(
+        `SELECT * FROM transaction_items WHERE transaction_id = ? AND product_id = ?`,
+        [transactionId, productId],
+        (err, item) => {
+          if (err) return reject(err);
+          if (!item) return reject(new Error("⚠️ المنتج غير موجود في الفاتورة"));
+
+          if (quantity > item.quantity) {
+            return reject(new Error("⚠️ الكمية المراد إرجاعها أكبر من كمية الشراء"));
+          }
+
+          // حساب الكمية الجديدة
+          const newQuantity = item.quantity - quantity;
+          const newTotalPrice = newQuantity * item.unit_price;
+
+          // تحديث جدول transaction_items
+          if (newQuantity === 0) {
+            db.run(`DELETE FROM transaction_items WHERE id = ?`, [item.id]);
+          } else {
+            db.run(
+              `UPDATE transaction_items SET quantity = ?, total_price = ? WHERE id = ?`,
+              [newQuantity, newTotalPrice, item.id]
+            );
+          }
+
+          // تحديث جدول transactions (المجموع الكلي)
+          db.get(
+            `SELECT SUM(total_price) AS total FROM transaction_items WHERE transaction_id = ?`,
+            [transactionId],
+            (err2, row) => {
+              if (err2) return reject(err2);
+
+              const newTotalAmount = row.total || 0;
+              db.run(`UPDATE transactions SET total_amount = ? WHERE id = ?`, [newTotalAmount, transactionId]);
+
+              // تحديث المخزون (products)
+              db.run(
+                `UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?`,
+                [quantity, productId]
+              );
+
+              resolve({ success: true, newTotalAmount, newQuantity });
+            }
+          );
+        }
+      );
+    });
+  });
+});
+
 
 // === التقارير ===
 ipcMain.handle('reports-low-stock', async () => {
@@ -372,6 +606,26 @@ ipcMain.handle('reports-sales-summary', async (event, startDate, endDate) => {
     });
   });
 });
+ipcMain.handle('stock-movement-add', async (event, movement) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO stock_movements (product_id, movement_type, quantity, reference_id, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+      [
+        movement.product_id,
+        movement.movement_type,
+        movement.quantity,
+        movement.reference_id,
+        movement.notes
+      ],
+      function (err) {
+        if (err) return reject(err);
+        resolve({ success: true, id: this.lastID });
+      }
+    );
+  });
+});
+
 
 // أحداث التطبيق
 app.whenReady().then(() => {

@@ -468,36 +468,46 @@ const QuickStatsCard = ({ suppliersCount, categoriesCount, topSuppliers }) => (
   </div>
 );
 
-const RecentActivitiesCard = ({ activities }) => (
-  <div className="col-md-6">
-    <div className="card h-100 border-0 shadow-sm">
-      <div className="card-header bg-light border-0">
-        <div className="d-flex justify-content-between align-items-center">
-          <h6 className="mb-0">
-            <i className="fas fa-history me-2 text-primary"></i>
-            الأنشطة الأخيرة
-          </h6>
-          <span className="badge bg-primary">{activities.length}</span>
-        </div>
+const RecentActivitiesCard = ({ activities }) => {
+  const defaultActivities = [
+    { id: 1, action: 'إضافة منتج جديد', date: '2025-09-11', icon: 'fa-plus', color: 'primary' },
+    { id: 2, action: 'تحديث كمية المنتج', date: '2025-09-10', icon: 'fa-sync', color: 'warning' },
+    { id: 3, action: 'بيع 5 وحدات', date: '2025-09-10', icon: 'fa-shopping-cart', color: 'success' },
+    { id: 4, action: 'إضافة مورد جديد', date: '2025-09-09', icon: 'fa-truck', color: 'info' },
+    { id: 5, action: 'طلب إعادة تموين', date: '2025-09-08', icon: 'fa-box', color: 'danger' },
+    { id: 6, action: 'إنشاء تقرير شهري', date: '2025-09-07', icon: 'fa-file-alt', color: 'secondary' },
+    { id: 7, action: 'تعديل فئة', date: '2025-09-06', icon: 'fa-tags', color: 'dark' },
+    { id: 8, action: 'تسجيل مستخدم جديد', date: '2025-09-05', icon: 'fa-user-plus', color: 'success' }
+  ];
+
+  return (
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-header bg-white">
+        <h6 className="mb-0 fw-bold">الأنشطة الأخيرة</h6>
       </div>
-      <div className="card-body">
-        <div className="activities-list">
-          {activities.map(activity => (
-            <div key={activity.id} className="activity-item d-flex align-items-center mb-3">
-              <div className={`activity-icon me-3 text-${activity.color}`}>
-                <i className={activity.icon}></i>
+      <div className="card-body" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+        <ul className="list-group list-group-flush">
+          {defaultActivities.map((activity) => (
+            <li
+              key={activity.id}
+              className="list-group-item d-flex align-items-center border-0 px-0 py-2 activity-item"
+              style={{ cursor: 'pointer' }}
+            >
+              <span className={`rounded-circle bg-${activity.color} bg-opacity-10 text-${activity.color} d-flex align-items-center justify-content-center me-3`} style={{ width: '36px', height: '36px' }}>
+                <i className={`fas ${activity.icon}`}></i>
+              </span>
+              <div>
+                <p className="mb-0 fw-medium">{activity.action}</p>
+                <small className="text-muted">{activity.date}</small>
               </div>
-              <div className="activity-content flex-grow-1">
-                <div className="activity-message">{activity.message}</div>
-                <small className="text-muted">منذ {activity.time}</small>
-              </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 const SalesInsightsCard = ({ salesData }) => (
   <div className="col-md-6">
@@ -567,52 +577,327 @@ const SalesInsightsCard = ({ salesData }) => (
   </div>
 );
 
-const TopCategoriesCard = ({ topCategories, totalProducts }) => (
-  <div className="col-md-4">
-    <div className="categories-card">
-      <div className="card h-100 border-0 shadow-sm">
-        <div className="card-header bg-light border-0">
-          <h6 className="mb-0">
-            <i className="fas fa-chart-pie me-2 text-info"></i>
-            أكثر الفئات تنوعاً
-          </h6>
-        </div>
-        <div className="card-body">
-          {topCategories.length > 0 ? (
-            <div className="categories-list">
-              {topCategories.map(([category, data], index) => {
-                const percentage = (data.count / totalProducts) * 100;
-                const colors = ['primary', 'success', 'warning', 'info', 'secondary'];
-                const color = colors[index] || 'secondary';
-                return (
-                  <div key={category} className="category-item mb-3">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <div className="category-info">
-                        <span className="fw-semibold">{category}</span>
-                        <br />
-                        <small className="text-muted">{data.count} منتج • {data.value.toFixed(0)} د.ج</small>
+
+const TopCategoriesCard = ({ topCategories, totalProducts }) => {
+  // ✅ states
+  const [viewMode, setViewMode] = useState("compact"); // compact | detailed
+  const [expandedCategory, setExpandedCategory] = useState(null);
+
+  return (
+    <div className="col-md-4">
+      <div className="categories-card">
+        <div className="card h-100 border-0 shadow-sm">
+          <div className="card-header bg-gradient-info text-dark border-0">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 className="mb-0">
+                  <i className="fas fa-chart-pie me-2"></i>
+                  أهم الفئات
+                </h6>
+                <small className="text-dark-75">التوزيع حسب عدد المنتجات</small>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <span className="badge bg-primary text-info">{topCategories.length}</span>
+                {topCategories.length > 0 && (
+                  <div className="btn-group btn-group-sm" role="group">
+                    <button
+                      type="button"
+                      className={`btn ${viewMode === 'compact' ? 'btn-light' : 'btn-outline-light'}`}
+                      style={{fontSize: '10px', padding: '4px 8px'}}
+                      onClick={() => setViewMode('compact')}
+                      title="عرض مضغوط"
+                    >
+                      <i className="fas fa-list"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${viewMode === 'detailed' ? 'btn-light' : 'btn-outline-light'}`}
+                      style={{fontSize: '10px', padding: '4px 8px'}}
+                      onClick={() => setViewMode('detailed')}
+                      title="عرض مفصل"
+                    >
+                      <i className="fas fa-th"></i>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ====== Body ====== */}
+          <div className="card-body p-0">
+            {topCategories.length > 0 ? (
+              <div
+                className="categories-list"
+                style={{
+                  maxHeight: "350px",
+                  overflowY: "auto",
+                  padding: "16px",
+                  scrollbarWidth: "thin",
+                }}
+              >
+                {topCategories.map(([category, data], index) => {
+                  const percentage = (data.count / totalProducts) * 100;
+                  const colors = [
+                    "primary",
+                    "success",
+                    "warning",
+                    "info",
+                    "secondary",
+                    "danger",
+                    "dark",
+                    "purple",
+                    "pink",
+                    "orange",
+                  ];
+                  const color = colors[index % colors.length];
+                  const isExpanded = expandedCategory === category;
+
+                  return (
+                    <div
+                      key={category}
+                      className="category-item mb-3 p-3 rounded-3 border hover-shadow"
+                      style={{
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
+                        backgroundColor: isExpanded ? "#f8f9fa" : "white",
+                        borderColor: isExpanded
+                          ? `var(--bs-${color})`
+                          : "#e9ecef",
+                      }}
+                      onClick={() =>
+                        setExpandedCategory(isExpanded ? null : category)
+                      }
+                    >
+                      {/* Header */}
+                      <div className="category-header">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <div className="category-info d-flex align-items-center">
+                            <div
+                              className={`category-icon me-2 bg-${color} text-white rounded-circle d-flex align-items-center justify-content-center`}
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                fontSize: "14px",
+                              }}
+                            >
+                              <i className="fas fa-tag"></i>
+                            </div>
+                            <div>
+                              <span
+                                className="fw-semibold text-truncate d-block"
+                                style={{
+                                  maxWidth:
+                                    viewMode === "compact" ? "140px" : "180px",
+                                  fontSize: "14px",
+                                  color: "#2c3e50",
+                                }}
+                                title={category}
+                              >
+                                {category}
+                              </span>
+                              <small className="text-muted">
+                                <i className="fas fa-boxes me-1"></i>
+                                {data.count} منتج
+                              </small>
+                            </div>
+                          </div>
+
+                          <div className="category-stats text-end">
+                            <span
+                              className={`badge bg-${color} mb-1`}
+                              style={{ fontSize: "11px" }}
+                            >
+                              {percentage.toFixed(1)}%
+                            </span>
+                            <br />
+                            <small className="text-muted">
+                              <i className="fas fa-coins me-1"></i>
+                              {data.value.toFixed(0)} د.ج
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className="progress mb-2" style={{ height: "8px" }}>
+                          <div
+                            className={`progress-bar bg-${color} progress-bar-animated`}
+                            style={{ width: `${percentage}%` }}
+                            role="progressbar"
+                            aria-valuenow={percentage}
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                          ></div>
+                        </div>
                       </div>
-                      <span className={`badge bg-${color}`}>{percentage.toFixed(1)}%</span>
+
+                      {/* تفاصيل موسعة */}
+                      {isExpanded && viewMode === "detailed" && (
+                        <div className="category-details mt-3 pt-3 border-top">
+                          <div className="row g-2">
+                            <div className="col-6">
+                              <div className="stat-box text-center p-2 bg-light rounded">
+                                <div className={`text-${color} fw-bold`}>
+                                  {data.count}
+                                </div>
+                                <small className="text-muted">المنتجات</small>
+                              </div>
+                            </div>
+                            <div className="col-6">
+                              <div className="stat-box text-center p-2 bg-light rounded">
+                                <div className="text-success fw-bold">
+                                  {(data.value / data.count).toFixed(0)}
+                                </div>
+                                <small className="text-muted">
+                                  متوسط القيمة
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-2">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <small className="text-muted">
+                                نسبة من الإجمالي:
+                              </small>
+                              <div className="d-flex align-items-center">
+                                <div
+                                  className="mini-progress me-2"
+                                  style={{
+                                    width: "50px",
+                                    height: "4px",
+                                    backgroundColor: "#e9ecef",
+                                    borderRadius: "2px",
+                                  }}
+                                >
+                                  <div
+                                    className={`bg-${color}`}
+                                    style={{
+                                      width: `${percentage}%`,
+                                      height: "100%",
+                                      borderRadius: "2px",
+                                    }}
+                                  ></div>
+                                </div>
+                                <small className="fw-semibold">
+                                  {percentage.toFixed(1)}%
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* أزرار سريعة */}
+                          <div className="quick-actions mt-3">
+                            <div className="d-flex gap-1">
+                              <button
+                                className={`btn btn-outline-${color} btn-sm flex-fill`}
+                                style={{ fontSize: "11px" }}
+                              >
+                                <i className="fas fa-eye me-1"></i>
+                                عرض المنتجات
+                              </button>
+                              <button
+                                className={`btn btn-outline-${color} btn-sm flex-fill`}
+                                style={{ fontSize: "11px" }}
+                              >
+                                <i className="fas fa-chart-bar me-1"></i>
+                                تقرير مفصل
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* مؤشر التوسع */}
+                      <div className="text-center mt-2">
+                        <i
+                          className={`fas fa-chevron-${
+                            isExpanded ? "up" : "down"
+                          } text-muted`}
+                          style={{ fontSize: "12px" }}
+                        ></i>
+                      </div>
                     </div>
-                    <div className="progress" style={{height: '6px'}}>
-                      <div className={`progress-bar bg-${color}`} style={{width: `${percentage}%`}}></div>
+                  );
+                })}
+
+                {/* مؤشر التمرير */}
+                {topCategories.length > 3 && (
+                  <div className="scroll-indicator text-center mt-3 pt-3 border-top">
+                    <div className="d-flex justify-content-center align-items-center">
+                      <div className="scroll-animation me-2">
+                        <i
+                          className="fas fa-mouse text-info"
+                          style={{ fontSize: "16px" }}
+                        ></i>
+                      </div>
+                      <div>
+                        <small className="text-muted fw-semibold">
+                          مرر للأسفل لرؤية المزيد
+                        </small>
+                        <br />
+                        <small
+                          className="text-muted"
+                          style={{ fontSize: "11px" }}
+                        >
+                          {topCategories.length - 3} فئة إضافية
+                        </small>
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center text-muted py-4">
-              <i className="fas fa-folder-open fa-3x mb-3"></i>
-              <p>لا توجد فئات محددة بعد</p>
-              <button className="btn btn-outline-primary btn-sm">إضافة فئة جديدة</button>
-            </div>
-          )}
+                )}
+
+                {/* ملخص سريع */}
+                <div className="categories-summary mt-3 p-3 bg-light rounded">
+                  <div className="row g-2 text-center">
+                    <div className="col-4">
+                      <div className="text-primary fw-bold">
+                        {topCategories.length}
+                      </div>
+                      <small className="text-muted">فئات</small>
+                    </div>
+                    <div className="col-4">
+                      <div className="text-success fw-bold">{totalProducts}</div>
+                      <small className="text-muted">منتجات</small>
+                    </div>
+                    <div className="col-4">
+                      <div className="text-info fw-bold">
+                        {topCategories
+                          .reduce((sum, [, data]) => sum + data.value, 0)
+                          .toFixed(0)}
+                      </div>
+                      <small className="text-muted">د.ج</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // ===== Empty State =====
+              <div className="text-center text-muted py-5">
+                <div className="empty-state">
+                  <i className="fas fa-folder-open fa-4x mb-3 text-muted opacity-50"></i>
+                  <h6 className="text-muted mb-2">لا توجد فئات محددة بعد</h6>
+                  <p className="text-muted mb-3" style={{ fontSize: "14px" }}>
+                    ابدأ بإضافة منتجات وتصنيفها لرؤية التحليلات
+                  </p>
+                  <div className="d-flex justify-content-center gap-2">
+                    <button className="btn btn-primary btn-sm">
+                      <i className="fas fa-plus me-1"></i>
+                      إضافة فئة جديدة
+                    </button>
+                    <button className="btn btn-outline-info btn-sm">
+                      <i className="fas fa-upload me-1"></i>
+                      استيراد فئات
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const EnhancedLowStockProducts = ({ products }) => {
   const count = products.length;

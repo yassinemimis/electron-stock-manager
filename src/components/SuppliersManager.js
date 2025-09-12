@@ -61,18 +61,23 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
     setLoading(true);
     try {
       if (editingSupplier) {
-        await InventoryService.updateSupplier(editingSupplier.id, newSupplier);
+        // تحديث
+        await InventoryService.updateSupplier({
+          ...newSupplier,
+          id: editingSupplier.id
+        });
         setEditingSupplier(null);
-        showSuccessToast('تم تحديث المورد بنجاح');
+        showSuccessToast('✅ تم تحديث المورد بنجاح');
       } else {
+        // إضافة
         await InventoryService.addSupplier(newSupplier);
-        showSuccessToast('تم إضافة المورد بنجاح');
+        showSuccessToast('✅ تم إضافة المورد بنجاح');
       }
-      
+
       resetForm();
       onRefresh();
     } catch (error) {
-      alert('خطأ: ' + error.message);
+      alert('❌ خطأ: ' + error.message);
     }
     setLoading(false);
   };
@@ -139,7 +144,7 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
 
   const getSupplierColor = (index) => {
     const colors = [
-      'primary', 'success', 'warning', 'info', 'secondary', 
+      'primary', 'success', 'warning', 'info', 'secondary',
       'danger', 'dark', 'primary', 'success', 'warning'
     ];
     return colors[index % colors.length];
@@ -161,14 +166,14 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
           </div>
           <div className="col-md-6 text-end">
             <div className="btn-group me-2">
-              <button 
+              <button
                 className={`btn btn-outline-secondary ${viewMode === 'cards' ? 'active' : ''}`}
                 onClick={() => setViewMode('cards')}
               >
                 <i className="fas fa-th-large me-1"></i>
                 بطاقات
               </button>
-              <button 
+              <button
                 className={`btn btn-outline-secondary ${viewMode === 'table' ? 'active' : ''}`}
                 onClick={() => setViewMode('table')}
               >
@@ -176,7 +181,7 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                 جدول
               </button>
             </div>
-            <button 
+            <button
               className="btn btn-primary btn-lg shadow-sm"
               onClick={() => setShowAddForm(!showAddForm)}
               disabled={loading}
@@ -286,9 +291,9 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-actions mt-4 text-end">
-                <button 
+                <button
                   type="button"
                   className="btn btn-secondary me-2"
                   onClick={resetForm}
@@ -297,7 +302,7 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                   <i className="fas fa-times me-1"></i>
                   إلغاء
                 </button>
-                <button 
+                <button
                   type="button"
                   className="btn btn-success btn-lg px-4"
                   onClick={handleAdd}
@@ -332,13 +337,13 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                   {suppliers.length === 0 ? 'لا يوجد موردين بعد' : 'لا توجد نتائج مطابقة للبحث'}
                 </h5>
                 <p className="text-muted">
-                  {suppliers.length === 0 ? 
-                    'ابدأ بإضافة موردين لإدارة مصادر منتجاتك' : 
+                  {suppliers.length === 0 ?
+                    'ابدأ بإضافة موردين لإدارة مصادر منتجاتك' :
                     'جرب تغيير مصطلحات البحث'
                   }
                 </p>
                 {suppliers.length === 0 && (
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={() => setShowAddForm(true)}
                   >
@@ -351,94 +356,101 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
           </div>
         ) : (
           <>
-            {viewMode === 'cards' ? (
-              // عرض البطاقات
-              <div className="row g-4">
-                {filteredSuppliers.map((supplier, index) => (
-                  <div key={supplier.id} className="col-lg-4 col-md-6">
-                    <div className="supplier-card">
-                      <div className="card h-100 border-0 shadow-sm">
-                        <div className="card-body">
-                          <div className="supplier-header mb-3">
-                            <div className="d-flex align-items-center">
-                              <div className={`supplier-avatar bg-${getSupplierColor(index)} me-3`}>
-                                {getSupplierAvatar(supplier.name)}
-                              </div>
-                              <div className="flex-grow-1">
-                                <h5 className="supplier-name mb-1">{supplier.name}</h5>
-                                <small className="text-muted">
-                                  تم التسجيل: {new Date(supplier.created_at).toLocaleDateString('ar-DZ')}
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="supplier-details">
-                            {supplier.contact_person && (
-                              <div className="detail-item mb-2">
-                                <i className="fas fa-user text-muted me-2"></i>
-                                <small className="text-muted">المسؤول:</small>
-                                <span className="ms-2">{supplier.contact_person}</span>
-                              </div>
-                            )}
-                            {supplier.phone && (
-                              <div className="detail-item mb-2">
-                                <i className="fas fa-phone text-success me-2"></i>
-                                <small className="text-muted">الهاتف:</small>
-                                <span className="ms-2 fw-semibold">{supplier.phone}</span>
-                              </div>
-                            )}
-                            {supplier.email && (
-                              <div className="detail-item mb-2">
-                                <i className="fas fa-envelope text-info me-2"></i>
-                                <small className="text-muted">البريد:</small>
-                                <span className="ms-2">{supplier.email}</span>
-                              </div>
-                            )}
-                            {supplier.address && (
-                              <div className="detail-item mb-2">
-                                <i className="fas fa-map-marker-alt text-warning me-2"></i>
-                                <small className="text-muted">العنوان:</small>
-                                <span className="ms-2">{supplier.address}</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="supplier-actions mt-3">
-                            <div className="btn-group w-100" role="group">
-                              <button 
-                                className="btn btn-outline-primary btn-sm"
-                                onClick={() => handleEdit(supplier)}
-                                disabled={loading}
-                                title="تعديل المورد"
-                              >
-                                <i className="fas fa-edit me-1"></i>
-                                تعديل
-                              </button>
-                              <button 
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => handleDelete(supplier.id, supplier.name)}
-                                disabled={loading}
-                                title="حذف المورد"
-                              >
-                                <i className="fas fa-trash me-1"></i>
-                                حذف
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+           {viewMode === 'cards' ? (
+  // عرض البطاقات مع Scroll
+  <div 
+    className="row g-4 overflow-auto" 
+    style={{ maxHeight: "600px" }} // تقدر تبدل الارتفاع حسب تصميمك
+  >
+    {filteredSuppliers.map((supplier, index) => (
+      <div key={supplier.id} className="col-lg-4 col-md-6">
+        <div className="supplier-card">
+          <div className="card h-100 border-0 shadow-sm">
+            <div className="card-body">
+              <div className="supplier-header mb-3">
+                <div className="d-flex align-items-center">
+                  <div className={`supplier-avatar bg-${getSupplierColor(index)} me-3`}>
+                    {getSupplierAvatar(supplier.name)}
                   </div>
-                ))}
+                  <div className="flex-grow-1">
+                    <h5 className="supplier-name mb-1">{supplier.name}</h5>
+                    <small className="text-muted">
+                      تم التسجيل: {new Date(supplier.created_at).toLocaleDateString('ar-DZ')}
+                    </small>
+                  </div>
+                </div>
               </div>
-            ) : (
+
+              <div className="supplier-details">
+                {supplier.contact_person && (
+                  <div className="detail-item mb-2">
+                    <i className="fas fa-user text-muted me-2"></i>
+                    <small className="text-muted">المسؤول:</small>
+                    <span className="ms-2">{supplier.contact_person}</span>
+                  </div>
+                )}
+                {supplier.phone && (
+                  <div className="detail-item mb-2">
+                    <i className="fas fa-phone text-success me-2"></i>
+                    <small className="text-muted">الهاتف:</small>
+                    <span className="ms-2 fw-semibold">{supplier.phone}</span>
+                  </div>
+                )}
+                {supplier.email && (
+                  <div className="detail-item mb-2">
+                    <i className="fas fa-envelope text-info me-2"></i>
+                    <small className="text-muted">البريد:</small>
+                    <span className="ms-2">{supplier.email}</span>
+                  </div>
+                )}
+                {supplier.address && (
+                  <div className="detail-item mb-2">
+                    <i className="fas fa-map-marker-alt text-warning me-2"></i>
+                    <small className="text-muted">العنوان:</small>
+                    <span className="ms-2">{supplier.address}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="supplier-actions mt-3">
+                <div className="btn-group w-100" role="group">
+                  <button
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={() => handleEdit(supplier)}
+                    disabled={loading}
+                    title="تعديل المورد"
+                  >
+                    <i className="fas fa-edit me-1"></i>
+                    تعديل
+                  </button>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => handleDelete(supplier.id, supplier.name)}
+                    disabled={loading}
+                    title="حذف المورد"
+                  >
+                    <i className="fas fa-trash me-1"></i>
+                    حذف
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
               // عرض الجدول
               <div className="suppliers-table">
                 <div className="card border-0 shadow-sm">
                   <div className="card-body p-0">
-                    <div className="table-responsive">
-                      <table className="table table-hover mb-0">
+                   <div 
+  className="table-responsive" 
+  style={{ maxHeight: "500px", overflowY: "auto" }}
+>
+
+                      <table class="table table-hover mb-0">
                         <thead className="table-dark">
                           <tr>
                             <th className="ps-4">
@@ -493,7 +505,7 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                               <td>{supplier.address || '-'}</td>
                               <td className="text-center">
                                 <div className="btn-group" role="group">
-                                  <button 
+                                  <button
                                     className="btn btn-sm btn-outline-primary"
                                     onClick={() => handleEdit(supplier)}
                                     disabled={loading}
@@ -501,7 +513,7 @@ const SuppliersManager = ({ suppliers, onRefresh }) => {
                                   >
                                     <i className="fas fa-edit"></i>
                                   </button>
-                                  <button 
+                                  <button
                                     className="btn btn-sm btn-outline-danger"
                                     onClick={() => handleDelete(supplier.id, supplier.name)}
                                     disabled={loading}

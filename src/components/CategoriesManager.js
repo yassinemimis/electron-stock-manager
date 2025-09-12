@@ -10,89 +10,99 @@ const CategoriesManager = ({ categories, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // فلترة الفئات حسب البحث
+  // فلترة الفئات
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     category.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // إضافة فئة جديدة
   const handleAdd = async () => {
     if (!newCategory.name.trim()) {
-      alert('يرجى إدخال اسم الفئة');
+      alert('⚠️ يرجى إدخال اسم الفئة');
       return;
     }
-
     setLoading(true);
     try {
       await InventoryService.addCategory(newCategory);
       setNewCategory({ name: '', description: '' });
       setShowAddForm(false);
       onRefresh();
-      
-      // إشعار نجاح
-      showSuccessToast('تم إضافة الفئة بنجاح');
-      
+      showSuccessToast('✅ تم إضافة الفئة بنجاح');
     } catch (error) {
-      alert('خطأ في إضافة الفئة: ' + error.message);
+      alert('❌ خطأ في إضافة الفئة: ' + error.message);
     }
     setLoading(false);
   };
 
+  // تعديل الفئة
+  const handleUpdate = async () => {
+    if (!newCategory.name.trim()) {
+      alert('⚠️ يرجى إدخال اسم الفئة');
+      return;
+    }
+    if (!editingCategory || !editingCategory.id) {
+      alert('⚠️ لم يتم تحديد فئة للتعديل');
+      return;
+    }
+    setLoading(true);
+    try {
+      await InventoryService.updateCategory({ ...editingCategory, ...newCategory });
+      setNewCategory({ name: '', description: '' });
+      setEditingCategory(null);
+      setShowAddForm(false);
+      onRefresh();
+      showSuccessToast('✅ تم تعديل الفئة بنجاح');
+    } catch (error) {
+      alert('❌ خطأ في تعديل الفئة: ' + error.message);
+    }
+    setLoading(false);
+  };
+
+  // حذف الفئة
   const handleDelete = async (id, categoryName) => {
     if (!window.confirm(`هل أنت متأكد من حذف الفئة "${categoryName}"؟\nسيؤثر هذا على جميع المنتجات في هذه الفئة.`)) {
       return;
     }
-
     setLoading(true);
     try {
       await InventoryService.deleteCategory(id);
       onRefresh();
-      showSuccessToast('تم حذف الفئة بنجاح');
+      showSuccessToast('✅ تم حذف الفئة بنجاح');
     } catch (error) {
-      alert('خطأ في حذف الفئة: ' + error.message);
+      alert('❌ خطأ في حذف الفئة: ' + error.message);
     }
     setLoading(false);
   };
 
+  // تنبيه نجاح
   const showSuccessToast = (message) => {
     const toast = document.createElement('div');
     toast.className = 'alert alert-success position-fixed';
     toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    toast.innerHTML = `
-      <i class="fas fa-check-circle me-2"></i>
-      ${message}
-    `;
+    toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
     document.body.appendChild(toast);
     setTimeout(() => {
-      if (document.body.contains(toast)) {
-        document.body.removeChild(toast);
-      }
+      if (document.body.contains(toast)) document.body.removeChild(toast);
     }, 3000);
   };
 
+  // أيقونات للفئات
   const getCategoryIcon = (categoryName) => {
     const icons = {
-      'إلكترونيات': '📱',
-      'ملابس': '👕',
-      'مواد غذائية': '🍎',
-      'مكتبية': '📚',
-      'أدوات': '🔧',
-      'صحة وجمال': '💄',
-      'رياضة': '⚽',
-      'ألعاب': '🎮',
-      'كتب': '📖',
-      'أثاث': '🪑'
+      'إلكترونيات': '📱', 'ملابس': '👕', 'مواد غذائية': '🍎',
+      'مكتبية': '📚', 'أدوات': '🔧', 'صحة وجمال': '💄',
+      'رياضة': '⚽', 'ألعاب': '🎮', 'كتب': '📖', 'أثاث': '🪑'
     };
     return icons[categoryName] || '📦';
   };
 
+  // ألوان للفئات
   const getCategoryColor = (index) => {
-    const colors = [
-      'primary', 'success', 'warning', 'info', 'secondary', 
-      'danger', 'dark', 'primary', 'success', 'warning'
-    ];
+    const colors = ['primary', 'success', 'warning', 'info', 'secondary', 'danger', 'dark'];
     return colors[index % colors.length];
   };
+
 
   return (
     <div className="categories-manager-container">
@@ -109,7 +119,7 @@ const CategoriesManager = ({ categories, onRefresh }) => {
             </p>
           </div>
           <div className="col-md-6 text-end">
-            <button 
+            <button
               className="btn btn-primary btn-lg shadow-sm"
               onClick={() => setShowAddForm(!showAddForm)}
               disabled={loading}
@@ -150,14 +160,14 @@ const CategoriesManager = ({ categories, onRefresh }) => {
         </div>
       </div>
 
-      {/* نموذج إضافة الفئة */}
+      {/* نموذج إضافة/تعديل الفئة */}
       {showAddForm && (
         <div className="add-category-form mb-4">
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-gradient-primary text-white">
               <h5 className="mb-0">
                 <i className="fas fa-plus-circle me-2"></i>
-                إضافة فئة جديدة
+                {editingCategory ? 'تعديل الفئة' : 'إضافة فئة جديدة'}
               </h5>
             </div>
             <div className="card-body p-4">
@@ -183,32 +193,36 @@ const CategoriesManager = ({ categories, onRefresh }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-actions mt-4 text-end">
-                <button 
+                <button
                   type="button"
                   className="btn btn-secondary me-2"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingCategory(null);
+                    setNewCategory({ name: '', description: '' });
+                  }}
                   disabled={loading}
                 >
                   <i className="fas fa-times me-1"></i>
                   إلغاء
                 </button>
-                <button 
+                <button
                   type="button"
                   className="btn btn-success btn-lg px-4"
-                  onClick={handleAdd}
+                  onClick={editingCategory ? handleUpdate : handleAdd}
                   disabled={loading || !newCategory.name.trim()}
                 >
                   {loading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2"></span>
-                      جارٍ الإضافة...
+                      جارٍ الحفظ...
                     </>
                   ) : (
                     <>
                       <i className="fas fa-check me-2"></i>
-                      إضافة الفئة
+                      {editingCategory ? 'تحديث' : 'إضافة الفئة'}
                     </>
                   )}
                 </button>
@@ -229,13 +243,13 @@ const CategoriesManager = ({ categories, onRefresh }) => {
                   {categories.length === 0 ? 'لا توجد فئات بعد' : 'لا توجد نتائج مطابقة للبحث'}
                 </h5>
                 <p className="text-muted">
-                  {categories.length === 0 ? 
-                    'ابدأ بإضافة فئات لتنظيم منتجاتك' : 
+                  {categories.length === 0 ?
+                    'ابدأ بإضافة فئات لتنظيم منتجاتك' :
                     'جرب تغيير مصطلحات البحث'
                   }
                 </p>
                 {categories.length === 0 && (
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={() => setShowAddForm(true)}
                   >
@@ -268,13 +282,13 @@ const CategoriesManager = ({ categories, onRefresh }) => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {category.description && (
                         <div className="category-description mb-3">
                           <p className="text-muted mb-0">{category.description}</p>
                         </div>
                       )}
-                      
+
                       <div className="category-stats mb-3 flex-grow-1">
                         <div className="row text-center">
                           <div className="col-6">
@@ -291,17 +305,26 @@ const CategoriesManager = ({ categories, onRefresh }) => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="category-actions">
                         <div className="btn-group w-100" role="group">
-                          <button 
-                            className={`btn btn-outline-${getCategoryColor(index)} btn-sm`}
-                            title="تعديل الفئة"
-                          >
+                           <button
+                className={`btn btn-outline-${getCategoryColor(index)} btn-sm me-2`}
+                title="تعديل الفئة"
+                onClick={() => {
+                  setEditingCategory(category);
+                  setNewCategory({
+                    name: category.name,
+                    description: category.description || ''
+                  });
+                  setShowAddForm(true);
+                }}
+              >
                             <i className="fas fa-edit me-1"></i>
                             تعديل
                           </button>
-                          <button 
+
+                          <button
                             className="btn btn-outline-danger btn-sm"
                             onClick={() => handleDelete(category.id, category.name)}
                             disabled={loading}
